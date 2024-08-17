@@ -31,3 +31,8 @@ class IndexView(generic.ListView):
         order_by = 'name'
         # return Deck.objects.order_by(order_by), UserDeck.objects.filter(Q(user=self.request.user)).order_by(order_by)
         return Deck.objects.order_by(order_by)
+
+
+def deck_delete(request, deck_name):
+    Deck.objects.filter(name=deck_name).delete()
+    return redirect('decks')

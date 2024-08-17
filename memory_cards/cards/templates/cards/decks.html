@@ -25,6 +25,7 @@
             <td>
                 <a class="btn btn-lg btn-danger" href="http://localhost:8000/cards/cards?q={{deck.id}}">{{deck.name}}</a>
             </td>
+            <td><a class="btn btn-warning" href=delete_deck/{{deck.name}}>delete</a></td>
         </tr>
     {% endfor %}
     </tbody>
