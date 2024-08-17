@@ -1,16 +1,21 @@
 from django.http import HttpResponse
 from django.template import loader
 from .models import Deck, Card, CardLog
-from django.shortcuts import redirect
+from django.shortcuts import redirect, reverse
 from django.views import generic
 from django.db.models import Q
+from django.db.utils import IntegrityError
+from django.contrib import messages
 
 
 def add_deck_form(request):
     name = request.POST["name"]
     kwargs = {'name': name}
     deck = Deck(**kwargs)
-    deck.save()
+    try:
+        deck.save()
+    except IntegrityError as err:
+        messages.error(request, err)
     return redirect('decks')
 
 

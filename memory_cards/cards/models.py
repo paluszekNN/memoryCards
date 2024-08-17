@@ -2,7 +2,7 @@ from django.db import models
 
 
 class Deck(models.Model):
-    name = models.CharField(max_length=1000)
+    name = models.CharField(max_length=1000, unique=True)
 
 
 class Card(models.Model):
