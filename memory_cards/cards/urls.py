@@ -9,4 +9,6 @@ urlpatterns = [
     path('cards', views.CardsView.as_view(), name='cards'),
     path('delete_deck/<str:deck_name>/', views.deck_delete, name='deck_delete'),
     path('delete_card/<str:card_name>/', views.card_delete, name='card_delete'),
+    path('edit_card', views.EditView.as_view(), name='edit_card'),
+    path('edit_card_form', views.edit_card_form, name='edit_card_form'),
 ]

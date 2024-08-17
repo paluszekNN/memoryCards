@@ -27,7 +27,7 @@
     {% for card in cards %}
         <tr>
             <td>
-                <a class="btn btn-lg btn-danger" href="card?q={{card.id}}">{{card.question_text}}</a>
+                <a class="btn btn-lg btn-danger" href="edit_card?q={{card.id}}">{{card.question_text}}</a>
             </td>
             <td><a class="btn btn-warning" href=delete_card/{{card.question_text}}>delete</a></td>
         </tr>

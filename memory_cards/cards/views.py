@@ -73,3 +73,30 @@ def card_delete(request, card_name):
     deck_id = card[0].deck.id
     card.delete()
     return redirect(reverse('cards') + '?q=' + str(deck_id))
+
+
+class EditView(generic.ListView):
+    template_name = 'cards/edit_card.html'
+    context_object_name = 'card'
+
+    def get_queryset(self):
+        return Card.objects.filter(Q(id__icontains=self.request.GET.get('q')))[0]
+
+
+def edit_card_form(request):
+    id_card = request.POST["id_card"]
+    question_text = request.POST["question_text"]
+    answer_text = request.POST["answer_text"]
+    association_text = request.POST["association_text"]
+    kwargs = {
+        'question_text': question_text,
+        'answer_text': answer_text,
+        'association_text': association_text,
+              }
+
+    card = Card.objects.filter(
+        Q(id__icontains=id_card)
+    )
+    deck_id = card[0].deck.id
+    card.update(**kwargs)
+    return redirect(reverse('cards') + '?q=' + str(deck_id))
