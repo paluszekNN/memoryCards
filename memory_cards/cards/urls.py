@@ -8,4 +8,5 @@ urlpatterns = [
     path('', views.IndexView.as_view(), name='decks'),
     path('cards', views.CardsView.as_view(), name='cards'),
     path('delete_deck/<str:deck_name>/', views.deck_delete, name='deck_delete'),
+    path('delete_card/<str:card_name>/', views.card_delete, name='card_delete'),
 ]

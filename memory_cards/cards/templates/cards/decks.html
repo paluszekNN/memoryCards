@@ -26,7 +26,7 @@
     {% for deck in decks %}
         <tr>
             <td>
-                <a class="btn btn-lg btn-danger" href="http://localhost:8000/cards/cards?q={{deck.id}}">{{deck.name}}</a>
+                <a class="btn btn-lg btn-danger" href="cards?q={{deck.id}}">{{deck.name}}</a>
             </td>
             <td><a class="btn btn-warning" href=delete_deck/{{deck.name}}>delete</a></td>
         </tr>

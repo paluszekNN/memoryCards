@@ -7,7 +7,7 @@ class Deck(models.Model):
 
 class Card(models.Model):
     deck = models.ForeignKey(Deck, on_delete=models.CASCADE)
-    question_text = models.CharField(max_length=1000)
+    question_text = models.CharField(max_length=1000, unique=True)
     answer_text = models.CharField(max_length=1000)
     association_text = models.CharField(max_length=1000)
     last_remembered = models.DateTimeField("last remembered", default=None, null=True)

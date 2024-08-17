@@ -32,7 +32,10 @@ def add_card_form(request):
         'association_text': association_text
               }
     card = Card(**kwargs)
-    card.save()
+    try:
+        card.save()
+    except IntegrityError as err:
+        messages.error(request, err)
     return redirect(reverse('cards') + '?q=' + deck_id)
 
 
@@ -63,3 +66,10 @@ class IndexView(generic.ListView):
 def deck_delete(request, deck_name):
     Deck.objects.filter(name=deck_name).delete()
     return redirect('decks')
+
+
+def card_delete(request, card_name):
+    card = Card.objects.filter(question_text=card_name)
+    deck_id = card[0].deck.id
+    card.delete()
+    return redirect(reverse('cards') + '?q=' + str(deck_id))
