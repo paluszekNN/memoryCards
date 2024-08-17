@@ -1,6 +1,14 @@
 {% extends 'index.html' %}
 
 {% block content %}
+<form method="post" action="add_card_form" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input name="deck_id" value="{{deck_id}}" type="hidden">
+    <input name="question_text" placeholder="question"><br>
+    <input name="answer_text" placeholder="answer"><br>
+    <input name="association_text" placeholder="association"><br>
+    <button class="btn btn-primary" type="submit">Add</button>
+</form>
 
 <h1>Cards</h1>
 <table class="table table-striped table-bordered table-sm" cellspacing="0">
@@ -11,7 +19,7 @@
     </thead>
     <tbody>
 
-    {% for card in deck %}
+    {% for card in cards %}
         <tr>
             <td>
                 <a class="btn btn-lg btn-danger" href="http://localhost:8000/cards/cards?q={{deck.id}}">{{card.question_text}}</a>
