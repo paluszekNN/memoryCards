@@ -62,6 +62,19 @@ class IndexView(generic.ListView):
         # return Deck.objects.order_by(order_by), UserDeck.objects.filter(Q(user=self.request.user)).order_by(order_by)
         return Deck.objects.order_by(order_by)
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        cards_to_remember = {}
+        for deck in context['decks']:
+            cards = Card.objects.filter(Q(deck=deck))
+            cards_to_learn = 0
+            for card in cards:
+                if card.time_to_be_remembered()<0:
+                    cards_to_learn += 1
+            cards_to_remember[deck.name] = cards_to_learn
+        context['cards_to_remember'] = cards_to_remember
+        return context
+
 
 def deck_delete(request, deck_name):
     Deck.objects.filter(name=deck_name).delete()

@@ -19,6 +19,7 @@
     <thead>
         <tr>
             <th class="th-sm">Name</th>
+            <th class="th-sm">Number cards to learn</th>
         </tr>
     </thead>
     <tbody>
@@ -28,6 +29,22 @@
             <td>
                 <a class="btn btn-lg btn-danger" href="cards?q={{deck.id}}">{{deck.name}}</a>
             </td>
+                {% for deck_name, cards_num in cards_to_remember.items %}
+                    {% if deck_name == deck.name %}
+                        <td>
+                            {{cards_num}}
+                        </td>
+                        {% if cards_num > 0 %}
+                            <td>
+                                <a class="btn btn-lg btn-danger" href="log_card?q={{deck.id}}">learn</a>
+                            </td>
+                        {% else %}
+                            <td>
+
+                            </td>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
             <td><a class="btn btn-warning" href=delete_deck/{{deck.name}}>delete</a></td>
         </tr>
     {% endfor %}
