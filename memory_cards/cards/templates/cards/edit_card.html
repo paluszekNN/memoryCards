@@ -2,7 +2,7 @@
 
 {% block content %}
 
-<form method="post" action="edit_card_form" enctype="multipart/form-data">
+<form method="post" action="log_card_from" enctype="multipart/form-data">
     {% csrf_token %}
     <input name="id_card" value="{{card.id}}" type="hidden">
     question<input name="question_text" value="{{card.question_text}}"><br>

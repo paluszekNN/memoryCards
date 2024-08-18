@@ -1,0 +1,19 @@
+{% extends 'index.html' %}
+
+{% block content %}
+
+<form method="post" action="edit_card_form" enctype="multipart/form-data">
+    <div class="form-group">
+        {% csrf_token %}
+        <input name="id_card" value="{{learn_card.id}}" type="hidden">
+        {{learn_card.question_text}}<br>
+        <details>
+          <summary>Answer</summary>
+          <p>{{learn_card.answer_text}}</p>
+          association:<textarea class="form-control" name="association_text" rows="5">{{learn_card.association_text}}</textarea><br>
+        </details>
+        <button name="answer_y" class="btn btn-success" type="submit" value="yes">Yes</button>
+        <button name="answer_n" class="btn btn-danger" type="submit" value="no">No</button>
+    </div>
+</form>
+{% endblock %}

@@ -96,6 +96,30 @@ class EditView(generic.ListView):
         return Card.objects.filter(Q(id__icontains=self.request.GET.get('q')))[0]
 
 
+class LearnView(generic.ListView):
+    template_name = 'cards/log_card.html'
+    context_object_name = 'learn_card'
+
+    def get(self, *args, **kwargs):
+        cards = Card.objects.filter(Q(id__icontains=self.request.GET.get('q')))
+        cards_to_remember = []
+        for card in cards:
+            if card.time_to_be_remembered() < 0:
+                cards_to_remember.append(card)
+        if not cards_to_remember:
+            return redirect(reverse('cards') + '?q=' + str(self.request.GET.get('q')))
+        return super(LearnView, self).get(*args, **kwargs)
+
+    def get_queryset(self):
+        cards = Card.objects.filter(Q(id__icontains=self.request.GET.get('q')))
+        card_to_remember = None
+        lowest_time_to_remember = 0
+        for card in cards:
+            if card.time_to_be_remembered()<lowest_time_to_remember:
+                card_to_remember = card
+        return card_to_remember
+
+
 def edit_card_form(request):
     id_card = request.POST["id_card"]
     question_text = request.POST["question_text"]
