@@ -6,6 +6,7 @@ from django.views import generic
 from django.db.models import Q
 from django.db.utils import IntegrityError
 from django.contrib import messages
+from django.utils import timezone
 
 
 def add_deck_form(request):
@@ -20,7 +21,6 @@ def add_deck_form(request):
 
 
 def add_card_form(request):
-    template = loader.get_template('cards/cards.html')
     deck_id = request.POST["deck_id"]
     question_text = request.POST["question_text"]
     answer_text = request.POST["answer_text"]
@@ -37,6 +37,45 @@ def add_card_form(request):
     except IntegrityError as err:
         messages.error(request, err)
     return redirect(reverse('cards') + '?q=' + deck_id)
+
+
+def log_card_form(request):
+    id_card = request.POST["id_card"]
+    card_q = Card.objects.filter(
+        Q(id__icontains=id_card)
+    )
+    card = card_q[0]
+    association_text = request.POST["association_text"]
+    answer = request.POST['answer']
+    time_diff_min = card.last_remember_min()
+    if answer == 'yes':
+        is_good = True
+        new_experience = card.experience + 1
+        last_remembered = timezone.now()
+    else:
+        is_good = False
+        new_experience = 0
+        last_remembered = card.last_remembered
+
+    kwargs_log = {
+        'card_id': card.id,
+        'question_text': card.question_text,
+        'answer_text': card.answer_text,
+        'association_text': association_text,
+        'experience': card.experience,
+        'time_diff_min': time_diff_min,
+        'is_good': is_good
+              }
+    kwargs_card = {
+        'association_text': association_text,
+        'experience': new_experience,
+        'last_remembered': last_remembered
+    }
+    card_log = CardLog(**kwargs_log)
+    card_log.save()
+    deck_id = card.deck.id
+    card_q.update(**kwargs_card)
+    return redirect(reverse('log_card') + '?q=' + str(deck_id))
 
 
 class CardsView(generic.ListView):
@@ -101,7 +140,8 @@ class LearnView(generic.ListView):
     context_object_name = 'learn_card'
 
     def get(self, *args, **kwargs):
-        cards = Card.objects.filter(Q(id__icontains=self.request.GET.get('q')))
+        deck = Deck.objects.filter(Q(id__icontains=self.request.GET.get('q')))[0]
+        cards = Card.objects.filter(Q(deck=deck))
         cards_to_remember = []
         for card in cards:
             if card.time_to_be_remembered() < 0:
@@ -111,11 +151,14 @@ class LearnView(generic.ListView):
         return super(LearnView, self).get(*args, **kwargs)
 
     def get_queryset(self):
-        cards = Card.objects.filter(Q(id__icontains=self.request.GET.get('q')))
+        deck = Deck.objects.filter(Q(id__icontains=self.request.GET.get('q')))[0]
+        cards = Card.objects.filter(Q(deck=deck))
         card_to_remember = None
         lowest_time_to_remember = 0
         for card in cards:
-            if card.time_to_be_remembered()<lowest_time_to_remember:
+            card_time = card.time_to_be_remembered()
+            if card_time<lowest_time_to_remember:
+                lowest_time_to_remember = card_time
                 card_to_remember = card
         return card_to_remember
 
