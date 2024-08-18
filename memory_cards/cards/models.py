@@ -12,7 +12,7 @@ class Card(models.Model):
     question_text = models.CharField(max_length=1000, unique=True)
     answer_text = models.CharField(max_length=1000)
     association_text = models.CharField(max_length=1000)
-    last_remembered = models.DateTimeField("last remembered", auto_now_add=True)
+    last_remembered = models.DateTimeField("last remembered", default=timezone.now())
     experience = models.FloatField(default=0)
 
     def last_remember_min(self):
@@ -28,7 +28,7 @@ class Card(models.Model):
 
 class CardLog(models.Model):
     card = models.ForeignKey(Card, on_delete=models.CASCADE)
-    question_text = models.CharField(max_length=1000, unique=True)
+    question_text = models.CharField(max_length=1000)
     answer_text = models.CharField(max_length=1000)
     association_text = models.CharField(max_length=1000)
     experience = models.FloatField(default=0)
