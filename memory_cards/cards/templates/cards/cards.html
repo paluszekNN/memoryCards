@@ -1,6 +1,26 @@
 {% extends 'index.html' %}
 
 {% block content %}
+
+<p>Add cards from csv file.</p>
+<br>
+{% if massages %}
+    {% for message in messages %}
+        <div>
+            <strong>{{message|safe}}</strong>
+        </div>
+    {% endfor %}
+{% else %}
+    <form method="POST" action="data_upload" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input name="deck_id" value="{{deck_id}}" type="hidden">
+        <label class="btn-warning" for="file_upload">Choose file to upload (CSV)</label>
+        <input id="file_upload" type="file" name="file" accept=".csv" style="opacity:0;">
+        <br>
+        <button class="btn btn-primary" type="submit">Upload</button>
+    </form>
+{% endif %}
+
 <form method="post" action="add_card_form" enctype="multipart/form-data">
     {% csrf_token %}
     <input name="deck_id" value="{{deck_id}}" type="hidden">

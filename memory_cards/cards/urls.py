@@ -13,4 +13,5 @@ urlpatterns = [
     path('edit_card_form', views.edit_card_form, name='edit_card_form'),
     path('log_card', views.LearnView.as_view(), name='log_card'),
     path('log_card_form', views.log_card_form, name='log_card_form'),
+    path('data_upload', views.data_upload, name='data_upload'),
 ]

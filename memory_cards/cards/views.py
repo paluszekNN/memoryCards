@@ -1,12 +1,14 @@
 from django.http import HttpResponse
 from django.template import loader
 from .models import Deck, Card, CardLog
-from django.shortcuts import redirect, reverse
+from django.shortcuts import redirect, reverse, render
 from django.views import generic
 from django.db.models import Q
 from django.db.utils import IntegrityError
 from django.contrib import messages
 from django.utils import timezone
+
+import pandas as pd
 
 
 def add_deck_form(request):
@@ -38,6 +40,32 @@ def add_card_form(request):
         messages.error(request, err)
     return redirect(reverse('cards') + '?q=' + deck_id)
 
+
+def data_upload(request):
+    csv_file = request.FILES['file']
+
+    if not csv_file.name.endswith('.csv'):
+        messages.error(request, 'This is not a csv file')
+    deck_id = request.POST["deck_id"]
+
+    data = pd.read_csv(csv_file, sep='\t')
+    data.dropna(inplace=True, axis=0)
+    for i in range(data.shape[0]):
+        card =data.iloc[i]
+        question_text = card["up"]
+        answer_text = card["down"]
+        kwargs = {
+            'deck_id': deck_id,
+            'question_text': question_text,
+            'answer_text': answer_text,
+            'association_text': ''
+        }
+        card = Card(**kwargs)
+        card.save()
+    # except:
+    #     messages.error(request, 'This file can\'t export as data')
+
+    return redirect(reverse('cards') + '?q=' + deck_id)
 
 def log_card_form(request):
     id_card = request.POST["id_card"]
