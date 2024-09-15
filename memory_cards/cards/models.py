@@ -25,6 +25,9 @@ class Card(models.Model):
         else:
             return self.experience**2 * 1440 - self.last_remember_min()
 
+    def split_name(self):
+        return self.question_text.split(' ')
+
 
 class CardLog(models.Model):
     card = models.ForeignKey(Card, on_delete=models.CASCADE)
