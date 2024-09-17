@@ -2,12 +2,12 @@
 
 {% block content %}
 
-<form method="post" action="log_card_from" enctype="multipart/form-data">
+<form method="post" action="edit_card_form" enctype="multipart/form-data">
     {% csrf_token %}
     <input name="id_card" value="{{card.id}}" type="hidden">
     question<input name="question_text" value="{{card.question_text}}"><br>
-    answer<input name="answer_text" value="{{card.answer_text}}"><br>
-    association<input name="association_text" value="{{card.association_text}}"><br>
+    answer<<textarea class="form-control" name="answer_text" rows="5">{{card.answer_text}}"</textarea><br>
+    association:<textarea class="form-control" name="association_text" rows="5">{{card.association_text}}</textarea><br>
     <button class="btn btn-primary" type="submit">Save</button>
 
 </form>
