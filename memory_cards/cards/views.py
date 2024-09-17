@@ -183,12 +183,15 @@ class LearnView(generic.ListView):
         cards = Card.objects.filter(Q(deck=deck))
         card_to_remember = None
         lowest_time_to_remember = 0
+        cards_to_remember = 0
         for card in cards:
+            if card.time_to_be_remembered() < 0:
+                cards_to_remember += 1
             card_time = card.time_to_be_remembered()
             if card_time<lowest_time_to_remember:
                 lowest_time_to_remember = card_time
                 card_to_remember = card
-        return card_to_remember
+        return card_to_remember, cards_to_remember
 
 
 def edit_card_form(request):

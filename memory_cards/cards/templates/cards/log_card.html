@@ -5,17 +5,18 @@
 <form method="post" action="log_card_form" enctype="multipart/form-data">
     <div class="form-group">
         {% csrf_token %}
-        <input name="id_card" value="{{learn_card.id}}" type="hidden">
-<!--        <input name="association_text" value="{{learn_card.association_text}}" type="hidden">-->
-        {{learn_card.question_text}}<br>
+        <input name="id_card" value="{{learn_card.0.id}}" type="hidden">
+        {{learn_card.0.question_text}}<br>
         <details>
           <summary>Answer</summary>
-          <p>{{learn_card.answer_text}}</p>
-          association:<textarea class="form-control" name="association_text" rows="5">{{learn_card.association_text}}</textarea><br>
+          <p>{{learn_card.0.answer_text}}</p>
+          association:<textarea class="form-control" name="association_text" rows="5">{{learn_card.0.association_text}}</textarea><br>
         </details>
         <button name="answer" class="btn btn-success" type="submit" value="yes">Yes</button>
         <button name="answer" class="btn btn-danger" type="submit" value="no">No</button>
     </div>
-    <a class="btn btn-lg btn-danger" href="edit_card?q={{learn_card.id}}">Edit</a>
+    Cards to learn {{learn_card.1}}
+    <br>
+    <a class="btn btn-lg btn-danger" href="edit_card?q={{learn_card.0.id}}">Edit</a>
 </form>
 {% endblock %}
