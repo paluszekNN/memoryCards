@@ -8,6 +8,7 @@ from django.db.utils import IntegrityError
 from django.contrib import messages
 from django.utils import timezone
 
+from datetime import timedelta
 import pandas as pd
 
 
@@ -67,6 +68,7 @@ def data_upload(request):
 
     return redirect(reverse('cards') + '?q=' + deck_id)
 
+
 def log_card_form(request):
     id_card = request.POST["id_card"]
     card_q = Card.objects.filter(
@@ -79,12 +81,11 @@ def log_card_form(request):
     if answer == 'yes':
         is_good = True
         new_experience = card.experience + 1
-        last_remembered = timezone.now()
     else:
         is_good = False
         new_experience = 0
-        last_remembered = card.last_remembered
 
+    last_remembered = timezone.now()
     kwargs_log = {
         'card_id': card.id,
         'question_text': card.question_text,
@@ -134,11 +135,16 @@ class IndexView(generic.ListView):
         cards_to_remember = {}
         for deck in context['decks']:
             cards = Card.objects.filter(Q(deck=deck))
-            cards_to_learn = 0
-            for card in cards:
-                if card.time_to_be_remembered()<0:
-                    cards_to_learn += 1
-            cards_to_remember[deck.name] = cards_to_learn
+            days = []
+            for day in range(7):
+                cards_to_learn = 0
+                for card in cards:
+                    if card.time_to_be_remembered(when=timezone.now() + timedelta(days=day))<0:
+                        cards_to_learn += 1
+                        card.experience += 1
+                        card.last_remembered = timezone.now() + timedelta(days=day)
+                days.append(cards_to_learn)
+            cards_to_remember[deck.name] = days
         context['cards_to_remember'] = cards_to_remember
         return context
 
@@ -175,7 +181,7 @@ class LearnView(generic.ListView):
             if card.time_to_be_remembered() < 0:
                 cards_to_remember.append(card)
         if not cards_to_remember:
-            return redirect(reverse('cards') + '?q=' + str(self.request.GET.get('q')))
+            return redirect('decks')
         return super(LearnView, self).get(*args, **kwargs)
 
     def get_queryset(self):

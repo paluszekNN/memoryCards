@@ -19,7 +19,17 @@
     <thead>
         <tr>
             <th class="th-sm">Name</th>
-            <th class="th-sm">Number cards to learn</th>
+            <th class="th-sm" colspan="7">Number cards to learn</th>
+        </tr>
+        <tr>
+            <th class="th-sm"></th>
+            <th class="th-sm">Today</th>
+            <th class="th-sm">Tomorrow</th>
+            <th class="th-sm">3 days later</th>
+            <th class="th-sm">4 days later</th>
+            <th class="th-sm">5 days later</th>
+            <th class="th-sm">6 days later</th>
+            <th class="th-sm">7 days later</th>
         </tr>
     </thead>
     <tbody>
@@ -31,10 +41,12 @@
             </td>
                 {% for deck_name, cards_num in cards_to_remember.items %}
                     {% if deck_name == deck.name %}
-                        <td>
-                            {{cards_num}}
-                        </td>
-                        {% if cards_num > 0 %}
+                        {% for num in cards_num %}
+                            <td>
+                                {{num}}
+                            </td>
+                        {% endfor %}
+                        {% if cards_num.0 > 0 %}
                             <td>
                                 <a class="btn btn-lg btn-danger" href="log_card?q={{deck.id}}">learn</a>
                             </td>
