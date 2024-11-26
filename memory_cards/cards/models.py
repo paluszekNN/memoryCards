@@ -15,11 +15,19 @@ class Card(models.Model):
     last_remembered = models.DateTimeField("last remembered", default=timezone.now())
     experience = models.FloatField(default=0)
 
-    def last_remember_min(self, when=timezone.now()):
+    def last_remember_min(self, when=None):
+        if not when:
+            when = timezone.now()
         difference = when - self.last_remembered
+        # print(when)
+        # print(self.last_remembered)
+        # print(difference)
+        # print(difference.total_seconds() / 60)
         return difference.total_seconds() / 60
 
-    def time_to_be_remembered(self, when=timezone.now()):
+    def time_to_be_remembered(self, when=None):
+        if not when:
+            when = timezone.now()
         if self.experience == 0:
             return -1
         else:
