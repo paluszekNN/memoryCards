@@ -14,6 +14,7 @@ class Card(models.Model):
     association_text = models.CharField(max_length=1000)
     last_remembered = models.DateTimeField("last remembered", default=timezone.now())
     experience = models.FloatField(default=0)
+    time_to_learn = models.DateTimeField(default=timezone.now())
 
     def last_remember_min(self, when=None):
         if not when:
