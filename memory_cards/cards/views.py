@@ -57,14 +57,17 @@ class Vectorizer:
         x_copy = pd.concat([x_copy, pd.DataFrame(self.vec1.transform(x_copy['question_text']).toarray(), index=x_copy.index)], axis=1)
         x_copy = pd.concat([x_copy, pd.DataFrame(self.vec2.transform(x_copy['answer_text']).toarray(), index=x_copy.index)], axis=1)
         x_copy = pd.concat([x_copy, pd.DataFrame(self.vec3.transform(x_copy['association_text']).toarray(), index=x_copy.index)], axis=1)
+        x_copy['count_answer_words'] = x_copy['answer_text'].apply(lambda x:len(x.split(' ')))
         x_copy.drop(['question_text', 'answer_text', 'association_text'], inplace=True, axis=1)
         x_copy['immediately'] = 0
         x_copy['after10m'] = 0
+        x_copy['after1m'] = 0
         x_copy['after_day'] = 0
         x_copy['after_week'] = 0
         x_copy['after_month'] = 0
         x_copy['after_6months'] = 0
-        x_copy.loc[x_copy['time_diff_min']<1, 'immediately'] = 1
+        x_copy.loc[x_copy['time_diff_min']<0.2, 'immediately'] = 1
+        x_copy.loc[x_copy['time_diff_min']>1, 'after1m'] = 1
         x_copy.loc[x_copy['time_diff_min']>10, 'after10m'] = 1
         x_copy.loc[x_copy['time_diff_min']>60*24, 'after_day'] = 1
         x_copy.loc[x_copy['time_diff_min']>60*24*7, 'after_week'] = 1
@@ -75,7 +78,7 @@ class Vectorizer:
 
 
 PROBABILITY_OF_SUCCESS = 0.5
-model = GradientBoostingClassifier(warm_start=True)
+model = GradientBoostingClassifier()
 clf = make_pipeline(Vectorizer(), model)
 
 
@@ -83,6 +86,7 @@ def get_cards_to_learn():
     start_time = time.time()
     logs = pd.DataFrame(CardLog.objects.all().values())
     logs.replace('<br>', ' ', inplace=True)
+    logs[['question_text', 'answer_text', 'association_text', 'experience', 'time_diff_min', 'is_good']].to_csv('data.csv')
     data_X = logs[['question_text', 'answer_text', 'association_text', 'experience', 'time_diff_min']]
     data_y = logs['is_good']
     clf.fit(data_X, data_y)
@@ -95,7 +99,7 @@ def get_cards_to_learn():
 
 
 def pred_time(card):
-    for time_q in [timezone.now() - timedelta(days=day)for day in range(7,0,-1)]+[timezone.now() - timedelta(minutes=10), timezone.now() - timedelta(minutes=1), timezone.now(), timezone.now() + timedelta(minutes=1), timezone.now() + timedelta(minutes=10)]+[timezone.now() + timedelta(days=day)for day in range(1,8)]:
+    for time_q in [timezone.now(), timezone.now() + timedelta(minutes=1), timezone.now() + timedelta(minutes=10)]+[timezone.now() + timedelta(days=day)for day in range(1,8)]:
         to_pred = pd.DataFrame([[card.question_text, card.answer_text, card.association_text, card.experience,
                                      card.last_remember_min(when=time_q)]],
                                    columns=['question_text', 'answer_text', 'association_text', 'experience',
@@ -104,17 +108,17 @@ def pred_time(card):
         pred = clf.predict_proba(to_pred)[:, 1]
         if pred<PROBABILITY_OF_SUCCESS:
             print(card.question_text)
-            print(card.question_text)
-            print(pred)
+            print(card.last_remembered)
             print(time_q)
-            kwargs_card = {'time_to_learn': time_q}
-            c = Card.objects.filter(Q(id__icontains=card.id))
-            c.update(**kwargs_card)
+            print(pred)
+
+            kwargs_card = {'time_to_learn': time_q, 'prediction': pred}
             break
     else:
-        kwargs_card = {'time_to_learn': timezone.now()+ timedelta(days=8)}
-        c = Card.objects.filter(Q(id__icontains=card.id))
-        c.update(**kwargs_card)
+        kwargs_card = {'time_to_learn': timezone.now()+ timedelta(days=8), 'prediction': 0}
+
+    c = Card.objects.filter(Q(id__icontains=card.id))
+    c.update(**kwargs_card)
 
 
 current_learning_date = timezone.now()
@@ -217,10 +221,10 @@ def log_card_form(request):
         saved_card = Card.objects.filter(
             Q(id__icontains=card.id)
         )[0]
-        if new_experience == saved_card.experience:
+        if new_experience == saved_card.experience and saved_card.last_remember_min()<time_diff_min:
             break
 
-    pred_time(card)
+    pred_time(saved_card)
     return redirect(reverse('log_card') + '?q=' + str(deck_id))
 
 
@@ -264,7 +268,7 @@ class IndexView(generic.ListView):
                 cards_to_learn = 0
                 now = timezone.now()
                 for card in cards:
-                    if card.time_to_learn - now < timedelta(days=0):
+                    if card.time_to_learn - now < timedelta(days=day):
                         cards_to_learn+=1
                 days.append(cards_to_learn)
             cards_to_remember[deck.name] = days
@@ -329,13 +333,13 @@ class LearnView(generic.ListView):
         cards_to_learn = []
         card_to_learn = None
         now = timezone.now()
-        lowest_time_to_remember = timedelta(days=100)
+        lowest_time_to_remember = 0
         for card in cards:
             if card.time_to_learn - now < timedelta(days=0):
                 cards_to_learn.append(card)
-                if lowest_time_to_remember>now - card.time_to_learn:
+                if lowest_time_to_remember < card.prediction:
                     card_to_learn = card
-                    lowest_time_to_remember = now - card.time_to_learn
+                    lowest_time_to_remember = card.prediction
         cards_to_remember = len(cards_to_learn)
         print(lowest_time_to_remember)
         return card_to_learn, cards_to_remember, str(lowest_time_to_remember)

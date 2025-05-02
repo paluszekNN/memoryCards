@@ -15,6 +15,7 @@ class Card(models.Model):
     last_remembered = models.DateTimeField("last remembered", default=timezone.now())
     experience = models.FloatField(default=0)
     time_to_learn = models.DateTimeField(default=timezone.now())
+    prediction = models.FloatField(default=0)
 
     def last_remember_min(self, when=None):
         if not when:
