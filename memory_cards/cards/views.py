@@ -27,6 +27,9 @@ import os
 import numpy as np
 from django.utils import timezone
 from time import sleep
+from background_task import background, models
+from copy import deepcopy
+import pickle
 
 simplefilter("ignore", category=ConvergenceWarning)
 simplefilter("ignore")
@@ -82,23 +85,34 @@ model = GradientBoostingClassifier()
 clf = make_pipeline(Vectorizer(), model)
 
 
-def get_cards_to_learn():
+def train_model(model):
     start_time = time.time()
     logs = pd.DataFrame(CardLog.objects.all().values())
     logs.replace('<br>', ' ', inplace=True)
-    logs[['question_text', 'answer_text', 'association_text', 'experience', 'time_diff_min', 'is_good']].to_csv('data.csv')
+    logs[['question_text', 'answer_text', 'association_text', 'experience', 'time_diff_min', 'is_good']].to_csv(
+        'data.csv')
     data_X = logs[['question_text', 'answer_text', 'association_text', 'experience', 'time_diff_min']]
     data_y = logs['is_good']
-    clf.fit(data_X, data_y)
-    print(f"fit time={time.time()-start_time}")
-    print(f"score {clf.score(data_X, data_y)}")
-    cards = Card.objects.all()
+    model.fit(data_X, data_y)
+    print(f"fit time={time.time() - start_time}")
+    print(f"score {model.score(data_X, data_y)}")
+    with open('model.pkl', 'wb') as f:
+        pickle.dump(model, f)
 
+
+@background()
+def get_cards_to_learn():
+    model = GradientBoostingClassifier()
+    clf = make_pipeline(Vectorizer(), model)
+    train_model(clf)
+    cards = Card.objects.all()
     for card in cards:
         pred_time(card)
 
 
 def pred_time(card):
+    with open('model.pkl', 'rb') as f:
+        clf = pickle.load(f)
     for time_q in [timezone.now(), timezone.now() + timedelta(minutes=1), timezone.now() + timedelta(minutes=10)]+[timezone.now() + timedelta(days=day)for day in range(1,8)]:
         to_pred = pd.DataFrame([[card.question_text, card.answer_text, card.association_text, card.experience,
                                      card.last_remember_min(when=time_q)]],
@@ -121,8 +135,7 @@ def pred_time(card):
     c.update(**kwargs_card)
 
 
-current_learning_date = timezone.now()
-get_cards_to_learn()
+get_cards_to_learn(repeat=models.Task.DAILY)
 
 
 def add_deck_form(request):
@@ -228,6 +241,21 @@ def log_card_form(request):
     return redirect(reverse('log_card') + '?q=' + str(deck_id))
 
 
+class SearchView(generic.ListView):
+    template_name = 'cards/search_card.html'
+    context_object_name = 'cards'
+
+    def get_queryset(self):
+        search_query = ''
+        if self.request.method == 'GET':
+            search_query = self.request.GET.get('question_text', None)
+        if search_query:
+            cards = Card.objects.filter(Q(question_text__contains=search_query))
+        else:
+            cards = Card.objects.all()
+        return cards
+
+
 class CardsView(generic.ListView):
     template_name = 'cards/cards.html'
     context_object_name = 'cards'
@@ -252,11 +280,6 @@ class IndexView(generic.ListView):
         return Deck.objects.order_by(order_by)
 
     def get_context_data(self, *, object_list=None, **kwargs):
-        global current_learning_date
-        if timezone.now()-current_learning_date>timedelta(days=1):
-            get_cards_to_learn()
-            current_learning_date = timezone.now()
-            print('learned')
         context = super().get_context_data(**kwargs)
         cards_to_remember = {}
         for deck in context['decks']:
@@ -301,12 +324,6 @@ class LearnView(generic.ListView):
     context_object_name = 'learn_card'
 
     def get(self, *args, **kwargs):
-        global current_learning_date
-        if timezone.now()-current_learning_date>timedelta(days=1):
-            get_cards_to_learn()
-            current_learning_date = timezone.now()
-            print('learned')
-
         deck = Deck.objects.filter(Q(id__icontains=self.request.GET.get('q')))[0]
         cards = Card.objects.filter(Q(deck=deck))
 
@@ -321,12 +338,6 @@ class LearnView(generic.ListView):
         return super(LearnView, self).get(*args, **kwargs)
 
     def get_queryset(self):
-        global current_learning_date
-        if timezone.now()-current_learning_date > timedelta(days=1):
-            get_cards_to_learn()
-            print('learned')
-            current_learning_date = timezone.now()
-
         deck = Deck.objects.filter(Q(id__icontains=self.request.GET.get('q')))[0]
         cards = Card.objects.filter(Q(deck=deck))
 
