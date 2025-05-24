@@ -3,3 +3,4 @@
 memory_cards/memory_cards/__pycache__/
 memory_cards/cards/__pycache__/
 *.csv
+*.pkl

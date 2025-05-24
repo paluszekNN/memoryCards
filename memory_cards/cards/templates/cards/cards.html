@@ -49,7 +49,7 @@
             <td>
                 <a class="btn btn-lg btn-danger" href="edit_card?q={{card.id}}">{{card.question_text}}</a>
             </td>
-            <td><a class="btn btn-warning" href=delete_card/{{card.split_name|join:"%20"}}>delete</a></td>
+            <td><a class="btn btn-warning" href=delete_card/{{card.id}}>delete</a></td>
         </tr>
     {% endfor %}
     </tbody>

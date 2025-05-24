@@ -80,7 +80,7 @@ class Vectorizer:
         return x_copy
 
 
-PROBABILITY_OF_SUCCESS = 0.5
+PROBABILITY_OF_SUCCESS = 0.6
 model = GradientBoostingClassifier()
 clf = make_pipeline(Vectorizer(), model)
 
@@ -111,6 +111,9 @@ def get_cards_to_learn():
 
 
 def pred_time(card):
+    card = Card.objects.filter(
+        Q(id__icontains=card.id)
+    )[0]
     with open('model.pkl', 'rb') as f:
         clf = pickle.load(f)
     for time_q in [timezone.now(), timezone.now() + timedelta(minutes=1), timezone.now() + timedelta(minutes=10)]+[timezone.now() + timedelta(days=day)for day in range(1,8)]:
@@ -304,8 +307,8 @@ def deck_delete(request, deck_name):
     return redirect('decks')
 
 
-def card_delete(request, card_name):
-    card = Card.objects.filter(question_text=card_name)
+def card_delete(request, id):
+    card = Card.objects.filter(id=int(id))
     deck_id = card[0].deck.id
     card.delete()
     return redirect(reverse('cards') + '?q=' + str(deck_id))
