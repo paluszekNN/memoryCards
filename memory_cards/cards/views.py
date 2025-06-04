@@ -81,17 +81,36 @@ class Vectorizer:
 
 
 PROBABILITY_OF_SUCCESS = 0.6
+steps = 4
 model = GradientBoostingClassifier()
 clf = make_pipeline(Vectorizer(), model)
 
 
+def preprocessing(df):
+    df[['exp'+str(i+1) for i in range(steps)]] = 0
+    df[['time_diff'+str(i+1) for i in range(steps)]] = 0
+    df[['is_good'+str(i+1) for i in range(steps)]] = 0
+    for i in range(steps, df.shape[0]):
+        question = df.iloc[i]['question_text']
+        tmp = df.iloc[:i]
+        tmp = tmp.loc[tmp['question_text']==question]
+        for step in range(steps):
+            if tmp.shape[0]>step:
+                df.loc[i, 'exp'+str(step+1)] = tmp.iloc[-1-step]['experience']
+                df.loc[i, 'time_diff'+str(step+1)] = tmp.iloc[-1-step]['time_diff_min']
+                df.loc[i, 'is_good'+str(step+1)] = tmp.iloc[-1-step]['is_good']
+
+
 def train_model(model):
+    global logs
     start_time = time.time()
     logs = pd.DataFrame(CardLog.objects.all().values())
     logs.replace('<br>', ' ', inplace=True)
-    logs[['question_text', 'answer_text', 'association_text', 'experience', 'time_diff_min', 'is_good']].to_csv(
-        'data.csv')
-    data_X = logs[['question_text', 'answer_text', 'association_text', 'experience', 'time_diff_min']]
+    logs = logs[['question_text', 'answer_text', 'association_text', 'experience', 'time_diff_min', 'is_good']]
+    logs.to_csv('data.csv')
+    preprocessing(logs)
+    logs.to_csv('data_preped.csv', index=False)
+    data_X = logs.drop(['is_good'], axis=1)
     data_y = logs['is_good']
     model.fit(data_X, data_y)
     print(f"fit time={time.time() - start_time}")
@@ -111,9 +130,17 @@ def get_cards_to_learn():
 
 
 def pred_time(card):
+    logs = pd.read_csv('data_preped.csv')
     card = Card.objects.filter(
         Q(id__icontains=card.id)
     )[0]
+    df = pd.DataFrame([[0]*3*steps], columns=['exp'+str(i+1) for i in range(steps)]+['time_diff'+str(i+1) for i in range(steps)]+['is_good'+str(i+1) for i in range(steps)])
+    tmp = logs.loc[logs['question_text'] == card.question_text]
+    for step in range(steps):
+        if tmp.shape[0] > step:
+            df.loc[0, 'exp' + str(step + 1)] = tmp.iloc[-1 - step]['experience']
+            df.loc[0, 'time_diff' + str(step + 1)] = tmp.iloc[-1 - step]['time_diff_min']
+            df.loc[0, 'is_good' + str(step + 1)] = tmp.iloc[-1 - step]['is_good']
     with open('model.pkl', 'rb') as f:
         clf = pickle.load(f)
     for time_q in [timezone.now(), timezone.now() + timedelta(minutes=1), timezone.now() + timedelta(minutes=10)]+[timezone.now() + timedelta(days=day)for day in range(1,8)]:
@@ -121,6 +148,7 @@ def pred_time(card):
                                      card.last_remember_min(when=time_q)]],
                                    columns=['question_text', 'answer_text', 'association_text', 'experience',
                                             'time_diff_min'])
+        to_pred = pd.concat([to_pred, df], axis=1)
         to_pred.replace('<br>', ' ', inplace=True)
         pred = clf.predict_proba(to_pred)[:, 1]
         if pred<PROBABILITY_OF_SUCCESS:
@@ -199,6 +227,7 @@ def data_upload(request):
 
 
 def log_card_form(request):
+    global logs
     id_card = request.POST["id_card"]
     card_q = Card.objects.filter(
         Q(id__icontains=id_card)
